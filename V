@@ -1,13 +1,16 @@
 // Class for the Vertices
 // These are the vertices of the CDFG. 
 
+import java.io*;
+
 public class V {
-	int ID;                 // Only used for sink nodes. Top sink node = 0, Bottom sink node = -1
-	String operation;				// Operation of the vertex (+, *, /, etc.)
-	String varName;				  // The variable being operated on. ie: h = a * b... h is the varName
-	V[] successors;					// Array of successors
-	int delay;							// Cycle delay. Multipliers = 2, divider/modulo = 3, all others = 1
+	int ID;                 	// Only used for sink nodes. Top sink node = 0, Bottom sink node = -1
+	String operation;			// Operation of the vertex (+, *, /, etc.)
+	String varName;				// The variable being operated on. ie: h = a * b... h is the varName
+	V[] successors;				// Array of successors
+	int delay;					// Cycle delay. Multipliers = 2, divider/modulo = 3, all others = 1
 	boolean isScheduled;		// True if scheduled, false otherwise
+	int timing;					// Timing of vertex
 	
 	// Constructor
 	public V(int id, String operation, String varName) {
@@ -17,6 +20,7 @@ public class V {
 		successors = new V[];
 		delay = calculateDelay(operation);
 		isScheduled = false;
+		timing = -1;
 	}
 	
 	// Sets the delay
@@ -43,13 +47,25 @@ public class V {
 	public int getSuccessorSize() {
 		return this.successor.size();
 	}
+
+	public void setTiming(int time) {
+		this.timing = time;
+	}
+
+	public int getTiming() {
+		return this.timing;
+	}
+
+	public int getID() {
+		return this.id;
+	}
 	
 	/* 
-   * Sets the delay for specified operator
+   	 * Sets the delay for specified operator
 	 * Multipliers = 2
 	 * Divider/modulo = 3
 	 * All others = 1
-  */
+  	*/
 	public int calculateDelay(String operator) {
 		if(operator == "*") {
 			return 2;
