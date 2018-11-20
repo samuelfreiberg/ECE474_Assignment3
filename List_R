@@ -3,6 +3,7 @@ import java.io*;
 // This class creates a CDFG, performs ALAP scheduling, and List_R
 
 // I've been unable to test because my laptop broke and I am using a rental.
+// This is still semi-pseudo code.
 
 public class list_r {
 	private V[] vertices;
