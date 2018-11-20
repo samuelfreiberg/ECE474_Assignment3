@@ -1,0 +1,190 @@
+public class V {
+	int ID;
+	String operation;
+	String varName;			// The variable being operated on. ie: h = a * b... h is the varName
+	boolean isSink;
+	boolean isScheduled;
+	boolean isLeaf;
+	V[] successors;
+	int delay;		// Cycle delay. Multipliers = 2, divider/modulo = 3, all others = 1
+	
+	public V(int id, String operation, String varName) {
+		this.ID = id;
+		this.operation = operation;
+		this.varName = varName;
+		isSink = false;
+		isLeaf = true;
+		isScheduled = false;
+		successors = new V[];
+	}
+	public V(int id, String operation, String varName, boolean isSink) {
+		this.ID = id;
+		this.operation = operation;
+		this.varName = varName;
+		this.isSink = isSink;
+		isLeaf = true;
+	}
+}
+
+public class E {
+	int start;
+	int end;
+	boolean isDepedency;
+}
+
+public class list_r {
+	private V[] vertices;
+	//private E[] edges;
+	private v_id;
+	
+	public list_r() {
+		vertices = new V[];
+		edges = new E[];
+		
+		V.add(new V(0, null, null, true) );	// Top Sink node
+		v_id = 1;
+	}
+	
+	// Adds all vertices for specified section 
+	public void addVertices(String[] lines, int x) {
+		
+		// Adds new vertex for each statement
+		for(int i = x; i < lines.length; i++) {
+			String[] line = tokenize(lines[i], " ");
+			String operator = line[line.length - 2];
+			vertices.add(new V(v_id, operator, line[0]) );
+			vertices[vertices.length() - 1].setDelay(getDelay(operator));	// Sets the delay
+			v_id++;
+		}
+		V.add(new V(-1, null, null, true) );	// Bottom Sink node
+	}
+	
+	public void addEdges(String[] lines, int x) {
+		
+		Set<String> set = new HashSet<String>();		// Set to hold variables already worked on (dependencies)
+		
+		for(int i = x; i < lines.length; i++ ) {
+			String[] line = tokenize(lines[i], " ");
+			
+			// Determine if case: o = sel ? i1 : i0 
+			if(line[line.length-2] != ":") {
+				String var = line[0];
+				String var1 = line[line.length - 3];
+				String var2 = line[line.length-1];
+				
+				// If no dependency, add edge from sink node
+				if(!set.contains(var1) && !set.contains(var2)) {	
+					findVertex(0).addSuccessor(findVertex(var));		// Adds successor to sink node
+					//edges.addEdge(0, findVertex(var));
+					set.add(var);
+				}
+				else {
+					if(set.contains(var1)) {
+						findVertex(var1).addSuccessor(findVertex(var));		// Adds successor
+						edges.addEdge(findVertex(var1), findVertex(var));
+						vertices[findVertex(var1)].isLeaf = false;
+					}
+					else {
+						findVertex(var2).addSuccessor(findVertex(var));		// Adds successor
+						edges.addEdge(findVertex(var2), findVertex(var));
+						vertices[findVertex(var2)].isLeaf = false;
+					}
+				}
+			}
+		}
+		
+		// Adds edges from leaf to bottom Sink node
+		for(int j = 0; j < vertices.length; j++) {
+			if(vertices[j].isLeaf) {
+				edges.addEdge(vertices[j].id, -1);
+			}
+		}
+	}
+	
+	// Performs ALAP scheduling
+	public void alap(int latency) {
+		
+		int[] timing = new int[vertices.length];		// Array to hold timing of each vertex
+		
+		// Schedules the sink node for upper latency bound + 1 and sets isScheduled to true
+		timing[timing.length - 1] = latency + 1;
+		vertices[vertices.length - 1].isScheduled = true;
+		
+		// whileall vertices are not scheduled, run the algorithm
+		while(!allVerticesScheduled()) {
+					// Iterate through vertices, find a vertex where all successors are scheduled
+					for(int i = 0; i < vertices.length(); i++) {	
+					
+						V currentV = vertices[i];
+						boolean valid = true;		// boolean to check if all successors are scheduled
+						int lowestTime = 100;		// For multiple successors, holds minimum time
+						int successorDelay = 0;
+						 
+						if(currentV.isScheduled == false) {			// If vertex is not scheduled, check all it's successors to determine if their scheduled
+							V[] successors = currentV.successors;
+							for(int j = 0; j < successors.length(); j++) {
+								if(successor[j].isScheduled == false) {
+									valid = false;
+									break;
+								}
+								else {
+									int index = findVindex(successor[j].id);
+									if(timing[index] < lowestTime) {
+										lowestTime = timing[index];
+										successorDelay = vertices[index].calculateDelay();
+									}
+								}
+							}	
+							if(valid == true) {
+								timing[i] = lowestTime - successorDelay;
+								vertices[i].isScheduled = true;
+							}
+						}
+					}
+			}	
+		}
+	
+	public int findV(String varName) {
+		for(int i = 0; i < vertices.length; i++) {
+			if(vertices[i].varName == varName) {
+				return vertices[i].ID;
+			}
+		}
+		return -2;
+	}
+	
+	public int findVindex(int id) {
+		for(int i = 0; i < vertices.length(); i++) {
+			if(vertices[i].ID == ID) {
+				return i;
+			}
+		}
+	}
+	
+	// Returns true if all vertices scheduled, false otherwise
+	public boolean allVerticesScheduled() {
+		for(int i = 0; i < vertices.length(); i++) {
+			if(vertices[i].isScheduled == false) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	// Sets the delay for specified operator
+	// Multipliers = 2
+	// Divider/modulo = 3
+	// All others = 1
+	public int calculateDelay(String operator) {
+		if(operator == "*") {
+			return 2;
+		}
+		else if(operator == "/" || operator == "%") {
+			return 3;
+		}
+		else {
+			return 1;
+		}
+	}
+	
+}
