@@ -4,7 +4,6 @@ public class V {
 	String varName;			// The variable being operated on. ie: h = a * b... h is the varName
 	boolean isSink;
 	boolean isScheduled;
-	boolean isLeaf;
 	V[] successors;
 	int delay;		// Cycle delay. Multipliers = 2, divider/modulo = 3, all others = 1
 	
@@ -13,7 +12,6 @@ public class V {
 		this.operation = operation;
 		this.varName = varName;
 		isSink = false;
-		isLeaf = true;
 		isScheduled = false;
 		successors = new V[];
 	}
@@ -22,7 +20,6 @@ public class V {
 		this.operation = operation;
 		this.varName = varName;
 		this.isSink = isSink;
-		isLeaf = true;
 	}
 }
 
@@ -81,13 +78,9 @@ public class list_r {
 				else {
 					if(set.contains(var1)) {
 						findVertex(var1).addSuccessor(findVertex(var));		// Adds successor
-						edges.addEdge(findVertex(var1), findVertex(var));
-						vertices[findVertex(var1)].isLeaf = false;
 					}
 					else {
 						findVertex(var2).addSuccessor(findVertex(var));		// Adds successor
-						edges.addEdge(findVertex(var2), findVertex(var));
-						vertices[findVertex(var2)].isLeaf = false;
 					}
 				}
 			}
@@ -95,8 +88,8 @@ public class list_r {
 		
 		// Adds edges from leaf to bottom Sink node
 		for(int j = 0; j < vertices.length; j++) {
-			if(vertices[j].isLeaf) {
-				edges.addEdge(vertices[j].id, -1);
+			if(vertices[j].successors.size() == 0) {	// If leaf, add successor to sink node
+				vertices[j].addSuccessor(-1)'
 			}
 		}
 	}
