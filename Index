@@ -1,3 +1,5 @@
+import java.io*;
+
 // This class creates a CDFG, performs ALAP scheduling, and List_R
 
 // I've been unable to test because my laptop broke and I am using a rental.
@@ -74,10 +76,10 @@ public class list_r {
 		int[] timing = new int[vertices.length];		// Array to hold timing of each vertex
 		
 		// Schedules the sink node for upper latency bound + 1 and sets isScheduled to true
-		timing[timing.length - 1] = latency + 1;
-		vertices[vertices.length - 1].isScheduled = true;
+		findV(-1).setTiming(latency + 1);
+		findV(-1).isScheduled = true;
 		
-		// whileall vertices are not scheduled, run the algorithm
+		// while all vertices are not scheduled, run the algorithm
 		while(!allVerticesScheduled()) {
 					// Iterate through vertices, find a vertex where all successors are scheduled
 					for(int i = 0; i < vertices.length(); i++) {	
@@ -89,21 +91,20 @@ public class list_r {
 						 
 						if(currentV.isScheduled == false) {			// If vertex is not scheduled, check all it's successors to determine if their scheduled
 							V[] successors = currentV.getSuccessors();
-							for(int j = 0; j < successors.length(); j++) {
-								if(successor[j].isScheduled == false) {
+							for(int j = 0; j < successors.size(); j++) {
+								if(successor[j].isScheduled == false) {		// If all successors are not scheduled, break
 									valid = false;
 									break;
 								}
 								else {
-									int index = findVindex(successor[j].id);
-									if(timing[index] < lowestTime) {
-										lowestTime = timing[index];
-										successorDelay = vertices[index].calculateDelay();
+									if(successor[j].getTiming() < lowestTime) {
+										lowestTime = successor[j].getTiming();
+										successorDelay = successor[j].getDelay();
 									}
 								}
 							}	
 							if(valid == true) {
-								timing[i] = lowestTime - successorDelay;
+								vertices[i].setTiming(lowestTime - successorDelay);
 								vertices[i].isScheduled = true;
 							}
 						}
@@ -111,6 +112,7 @@ public class list_r {
 			}	
 		}
 	
+	// Finds vertex by name
 	public int findV(String varName) {
 		for(int i = 0; i < vertices.length; i++) {
 			if(vertices[i].varName == varName) {
@@ -120,6 +122,7 @@ public class list_r {
 		return -2;
 	}
 	
+	// Finds vertex by ID
 	public int findVindex(int id) {
 		for(int i = 0; i < vertices.length(); i++) {
 			if(vertices[i].ID == ID) {
@@ -138,20 +141,5 @@ public class list_r {
 		return true;
 	}
 	
-	// Sets the delay for specified operator
-	// Multipliers = 2
-	// Divider/modulo = 3
-	// All others = 1
-	public int calculateDelay(String operator) {
-		if(operator == "*") {
-			return 2;
-		}
-		else if(operator == "/" || operator == "%") {
-			return 3;
-		}
-		else {
-			return 1;
-		}
-	}
-	
 }
+
