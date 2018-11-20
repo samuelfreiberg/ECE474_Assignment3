@@ -1,69 +1,44 @@
-public class V {
-	int ID;
-	String operation;
-	String varName;			// The variable being operated on. ie: h = a * b... h is the varName
-	boolean isSink;
-	boolean isScheduled;
-	V[] successors;
-	int delay;		// Cycle delay. Multipliers = 2, divider/modulo = 3, all others = 1
-	
-	public V(int id, String operation, String varName) {
-		this.ID = id;
-		this.operation = operation;
-		this.varName = varName;
-		isSink = false;
-		isScheduled = false;
-		successors = new V[];
-	}
-	public V(int id, String operation, String varName, boolean isSink) {
-		this.ID = id;
-		this.operation = operation;
-		this.varName = varName;
-		this.isSink = isSink;
-	}
-}
+// This class creates a CDFG, performs ALAP scheduling, and List_R
 
-public class E {
-	int start;
-	int end;
-	boolean isDepedency;
-}
+// I've been unable to test because my laptop broke and I am using a rental.
 
 public class list_r {
 	private V[] vertices;
-	//private E[] edges;
 	private v_id;
 	
 	public list_r() {
 		vertices = new V[];
-		edges = new E[];
 		
 		V.add(new V(0, null, null, true) );	// Top Sink node
+		V.add(new V(-1, null, null, true) );	// Bottom Sink node
+		
 		v_id = 1;
 	}
 	
-	// Adds all vertices for specified section 
+	// Adds all vertices for specified section.
+	// This gets called after all the declarations have been instantiated in the verilog file.
+	// Variable "x" is the first line of statements in the input file'
 	public void addVertices(String[] lines, int x) {
 		
 		// Adds new vertex for each statement
 		for(int i = x; i < lines.length; i++) {
 			String[] line = tokenize(lines[i], " ");
 			String operator = line[line.length - 2];
-			vertices.add(new V(v_id, operator, line[0]) );
-			vertices[vertices.length() - 1].setDelay(getDelay(operator));	// Sets the delay
+			vertices.add(new V(v_id, operator, line[0]) );	// Adds new vertex
 			v_id++;
 		}
-		V.add(new V(-1, null, null, true) );	// Bottom Sink node
 	}
 	
-	public void addEdges(String[] lines, int x) {
+	// Searches for dependencies within the statements
+	public void addDependencies(String[] lines, int x) {
 		
 		Set<String> set = new HashSet<String>();		// Set to hold variables already worked on (dependencies)
 		
 		for(int i = x; i < lines.length; i++ ) {
 			String[] line = tokenize(lines[i], " ");
 			
-			// Determine if case: o = sel ? i1 : i0 
+			// HAVE NOT ACCOUNTED FOR IF STATEMENTS YET
+			// Determine if case: o = sel ? i1 : i0... I have not accounted for this case yet
 			if(line[line.length-2] != ":") {
 				String var = line[0];
 				String var1 = line[line.length - 3];
@@ -72,7 +47,6 @@ public class list_r {
 				// If no dependency, add edge from sink node
 				if(!set.contains(var1) && !set.contains(var2)) {	
 					findVertex(0).addSuccessor(findVertex(var));		// Adds successor to sink node
-					//edges.addEdge(0, findVertex(var));
 					set.add(var);
 				}
 				else {
@@ -86,10 +60,10 @@ public class list_r {
 			}
 		}
 		
-		// Adds edges from leaf to bottom Sink node
+		// Adds dependencies from leaf to bottom Sink node
 		for(int j = 0; j < vertices.length; j++) {
-			if(vertices[j].successors.size() == 0) {	// If leaf, add successor to sink node
-				vertices[j].addSuccessor(-1)'
+			if(vertices[j].getSuccessorSize() == 0) {	// If leaf, add successor to sink node
+				vertices[j].addSuccessor(-1);
 			}
 		}
 	}
@@ -114,7 +88,7 @@ public class list_r {
 						int successorDelay = 0;
 						 
 						if(currentV.isScheduled == false) {			// If vertex is not scheduled, check all it's successors to determine if their scheduled
-							V[] successors = currentV.successors;
+							V[] successors = currentV.getSuccessors();
 							for(int j = 0; j < successors.length(); j++) {
 								if(successor[j].isScheduled == false) {
 									valid = false;
