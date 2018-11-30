@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 public class list_r {
@@ -51,6 +52,7 @@ public class list_r {
 				// If no dependency, add edge from sink node
 				if(!set.contains(var1) && !set.contains(var2)) {	
 					vertices.get(0).addSuccessor(findV(var0));			// Adds successor to sink node
+					findV(var0).addPredecessors(vertices.get(0));		// Adds predecessor
 					set.add(var0);
 				}
 				/* Initial Time is time from CDFG. Needed to compute slack for List_R scheduling */
@@ -58,14 +60,18 @@ public class list_r {
 					if(set.contains(var1) && set.contains(var2)) {
 						findV(var1).addSuccessor(findV(var0));		// Adds successor
 						findV(var2).addSuccessor(findV(var0));		// Adds successor
+						findV(var0).addPredecessors(findV(var1));	// Adds predecessor
+						findV(var0).addPredecessors(findV(var2));	// Adds predecessor
 						findV(var0).setInitialTime(Math.max(findV(var1).getInitialTime() + findV(var1).getDelay(), findV(var2).getInitialTime() + findV(var2).getDelay()));
 					}
 					else if(set.contains(var1)) {
 						findV(var1).addSuccessor(findV(var0));		// Adds successor
+						findV(var0).addPredecessors(findV(var1));	// Adds predecessor
 						findV(var0).setInitialTime(findV(var1).getInitialTime() + findV(var1).getDelay());
 					}
 					else if(set.contains(var2)) {
 						findV(var2).addSuccessor(findV(var0));		// Adds successor
+						findV(var0).addPredecessors(findV(var2));	// Adds predecessor
 						findV(var0).setInitialTime(findV(var2).getInitialTime() + findV(var2).getDelay());
 					}
 					set.add(var0);
@@ -79,6 +85,7 @@ public class list_r {
 			if(vertices.get(j).getSuccessorSize() == 0) {	// If leaf, add successor to bottom sink node
 				vertices.get(j).addSuccessor(vertices.get(1));
 			}
+			vertices.get(1).addPredecessors(vertices.get(j));	// Adds all vertices as predecessor to bottom sink node
 		}
 	}
 	
@@ -129,8 +136,142 @@ public class list_r {
 	/* Runs list_r scheduling */
 	public void listR_Scheduling() {
 		
+		int[] resources = new int[3];
+		resources[0] = 1;	// Resources requirement for ALU
+		resources[1] = 1;	// Resources requirement for Multiplier
+		resources[2] = 1;	// Resources requirement for Divider/Modulo
+		
+		// Unschedules all vertices besides top sink node
+		for(int x = 1; x < vertices.size(); x++) {
+			vertices.get(x).setScheduled(false);
+		}
+		vertices.get(0).setScheduled(true);		// Sets top sink node to scheduled
+		vertices.get(1).setScheduled(true);		// Sets top sink node to scheduled
+		
+		int time_step = 1;
+		Set<V> unscheduled = new HashSet<V>();
+		
+		while(!allVerticesScheduled()) {
+			//System.out.print("Unscheduled: " );
+			for(int i = 2; i < vertices.size(); i++) {
+				if(vertices.get(i).getInitialTime() == time_step && !vertices.get(i).getIsScheduled()) {
+					unscheduled.add(vertices.get(i));
+					//System.out.print(vertices.get(i).getName() + ", ");
+				}
+			}
+			
+			//System.out.println();
+			
+			/* Holds current # of resources at this time step */
+			int mult_count = 0;			
+			int div_modulo_count = 0;
+			int alu_count = 0;
+			
+			Iterator<V> it = unscheduled.iterator();
+			while(it.hasNext()) {
+				V curr = (V) it.next();
+				
+				// If slack = 0, we must schedule now
+				if(findV(curr.getName()).getTiming() - time_step == 0 && allPredecessorsScheduled(findV(curr.getName()))) {
+					findV(curr.getName()).setFinalTime(time_step);
+					findV(curr.getName()).setScheduled(true);
+					it.remove();
+					unscheduled.remove(findV(curr.getName()));
+					
+					/* Updates resources */
+					if(findV(curr.getName()).getOperation() == "*" ) {
+						mult_count++;
+						if(mult_count > resources[1]) {
+							resources[1]++;
+						}
+					}
+					else if(findV(curr.getName()).getOperation() == "/" || findV(curr.getName()).getOperation() == "%") {
+						div_modulo_count++;
+						if(div_modulo_count > resources[2]) {
+							resources[2]++;
+						}
+					}
+					else {
+						alu_count++;
+						if(alu_count > resources[0]) {
+							resources[0]++;
+						}
+					}
+				}
+			}
+			printScheduled();
+			
+			/* Schedule operations requiring no additional resources */
+			while(mult_count < resources[1]) {
+				Iterator<V> it1 = unscheduled.iterator();
+				
+				boolean found = false;	// Variable to determine if any var is found
+				
+				while(it1.hasNext()) {
+					V curr = (V) it1.next();
+					
+					if(findV(curr.getName()).getDelay() == 2 ) {
+						findV(curr.getName()).setFinalTime(time_step);
+						findV(curr.getName()).setScheduled(true);
+						it1.remove();
+						unscheduled.remove(findV(curr.getName()));
+						mult_count++;
+						found = true;
+						break;
+					}
+				}
+				if(!found) {
+					break;
+				}
+			}
+			
+			while(div_modulo_count < resources[2]) {
+				Iterator<V> it1 = unscheduled.iterator();
+				boolean found = false;
+				while(it1.hasNext()) {
+					V curr = (V) it1.next();
+					
+					if(findV(curr.getName()).getDelay() == 3 ) {
+						findV(curr.getName()).setFinalTime(time_step);
+						findV(curr.getName()).setScheduled(true);
+						it1.remove();
+						unscheduled.remove(findV(curr.getName()));
+						div_modulo_count++;
+						found = true;
+						break;
+					}
+				}
+				if(!found) {
+					break;
+				}
+			}
+			
+			while(alu_count < resources[0]) {
+				Iterator<V> it1 = unscheduled.iterator();
+				boolean found = false;
+				while(it1.hasNext()) {
+					V curr = (V) it1.next();
+					
+					if(findV(curr.getName()).getDelay() == 1 ) {
+						findV(curr.getName()).setFinalTime(time_step);
+						findV(curr.getName()).setScheduled(true);
+						it1.remove();
+						unscheduled.remove(findV(curr.getName()));
+						alu_count++;
+						found = true;
+						break;
+					}
+				}
+				if(!found) {
+					break;
+				}
+			}
+			
+			//printScheduled();
+			time_step++;
+		}
 	}
-	
+
 	
 	// Finds vertex by name
 	public V findV(String varName) {
@@ -140,6 +281,12 @@ public class list_r {
 			}
 		}
 		return null;
+	}
+	
+	public void printFinalTime() {
+		for(int i = 0; i < vertices.size(); i++) {
+			System.out.println(vertices.get(i).getName() + " is scheduled in time " + vertices.get(i).getFinalTime());
+		}
 	}
 
 	
@@ -168,6 +315,16 @@ public class list_r {
 	    return result;
 	}
 	
+	// True if all predecessors scheduled, false otherwise
+	public boolean allPredecessorsScheduled(V curr) {
+		for(int i = 0; i < curr.getPredecessors().size(); i++) {
+			if(!curr.getPredecessors().get(i).getIsScheduled()) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	public void printV() {
 		for(int i = 0; i < vertices.size(); i++) {
 			System.out.println("Vertex #" + i + ": " + vertices.get(i).getName() + ", " + vertices.get(i).getOperation());
@@ -185,6 +342,17 @@ public class list_r {
 		}
 	}
 	
+	public void printPredecessors() {
+		for(int i = 0; i < vertices.size(); i++) {
+			System.out.print("Vertex " + vertices.get(i).getName() + " has the following predecessors: ");
+			
+			for(int j = 0; j < vertices.get(i).getPredecessors().size(); j++) {
+				System.out.print(vertices.get(i).getPredecessors().get(j).getName() + ", ");
+			}
+			System.out.println();
+		}
+	}
+	
 	public void print_alap() {
 		for(int i = 0; i < vertices.size(); i++) {
 			System.out.println("Vertex " + vertices.get(i).getName() + " is scheduled in time " + vertices.get(i).getTiming());
@@ -194,6 +362,16 @@ public class list_r {
 		for(int i = 0; i < vertices.size(); i++) {
 			System.out.println(vertices.get(i).getDelay());
 		}
+	}
+	
+	public void printScheduled() {
+		System.out.print("Scheduled: ");
+		for(int i = 0; i < vertices.size(); i++) {
+			if(vertices.get(i).getIsScheduled()) {
+				System.out.print(vertices.get(i).getName() + ", ");
+			}
+		}
+		System.out.println();
 	}
 	
 	public void printInitialTimes() {
