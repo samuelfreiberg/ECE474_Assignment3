@@ -13,27 +13,6 @@ public class TestDriver {
 		ArrayList<String> arr4 = new ArrayList<String>();
 		ArrayList<String> arr5 = new ArrayList<String>();
 		
-//		arr1.add("f");
-//		arr1.add("a");
-//		arr1.add("*");
-//		arr1.add("b");
-//		
-//		arr2.add("g");
-//		arr2.add("f");
-//		arr2.add("*");
-//		arr2.add("c");
-//		
-//		arr3.add("h");
-//		arr3.add("g");
-//		arr3.add("*");
-//		arr3.add("d");
-//		
-//		arr4.add("i");
-//		arr4.add("h");
-//		arr4.add("*");
-//		arr4.add("e");
-
-		
 		arr1.add("a");
 		arr1.add("b");
 		arr1.add("+");
@@ -68,9 +47,13 @@ public class TestDriver {
 		test.addVertices(temp, 0);
 
 		test.addDependencies(temp, 0);
-		test.alap(9);
-		test.printInitialTimes();
+		test.alap(5);
+		//test.printPredecessors();
+		//test.printInitialTimes();
+		//test.print_alap();
 		test.print_alap();
+		test.listR_Scheduling();
+		test.printFinalTime();
 	}
 
 }
