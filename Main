@@ -52,7 +52,7 @@ int main(int argc, char ** argv) {
 	}
 
 	string inputFile = argv[1];			// Input C File to be read from
-	int latency = argv[2];					// Latency contraint
+	string latency = argv[2];					// Latency contraint
 	string outputFile = argv[3];			// Output file
 
 	vector <string> lines;		// Array to hold each line from input file
@@ -73,9 +73,9 @@ int main(int argc, char ** argv) {
 
 		infile.close();
 
-		string output = toVerilog(lines, filename);
+		string output = toVerilog(lines, outputFile);
 
-		outFileFun(outfileName, output);
+		//outFileFun(outputFile, output);
 	}
 	else {
 		cout << "File missing/Incorrect path\n";
@@ -235,4 +235,39 @@ vector<string> tokenize(string s, string tokenizer) {
 		result.push_back(s);
 	}
 	return result;
+}
+
+//writes string to file
+void outFileFun(string outfilename, string output) {
+	ofstream outfile;
+	outfile.open(outfilename.c_str());
+	outfile << output;
+	outfile.close();
+}
+
+//Removes spaces and inline coments
+string removeSpaces(string s) {
+	int count = 0;
+	for (int i = 0; i < s.length(); i++) {
+		if (s[i] == ' ' || s[i] == '\t') {
+			count++;
+		}
+		else {
+			count = 0;
+		}
+		if (count > 1) {
+			i--;
+			s.erase(s.begin() + i);
+		}
+		if (s[i] == '/') {
+			s = s.substr(0, i);
+		}
+	}
+	if (s[0] == ' ' || s[0] == '\t') {
+		s.erase(s.begin());
+	}
+	if (s[s.length() - 1] == ' ' || s[s.length() - 1] == '\t') {
+		s.erase(s.begin() + s.length() - 1);
+	}
+	return s;
 }
