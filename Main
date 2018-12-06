@@ -36,6 +36,11 @@ public:
 };
 
 map <string, string> sizes;		// <Variable Name, Data Type>
+string toVerilog(vector<string> data, string filename);
+int getDeclarations(vector <string> lines, vector <unit> &declarations);
+string setDeclarations(vector<unit>inputs);
+string getParam(vector<unit> inputs);
+vector<string> tokenize(string s, string tokenizer);
 
 
 int main(int argc,char ** argv) {
@@ -65,13 +70,12 @@ int main(int argc,char ** argv) {
 				lines.push_back(temp);
 			}
 		}
-	}
 
-        infile.close();
+    	infile.close();
 		
-        string output = toVerilog(lines,filename);
+    	string output = toVerilog(lines,filename);
 
-        outFileFun(outfileName, output);
+    	outFileFun(outfileName, output);
     }
     else {
         cout << "File missing/Incorrect path\n";
@@ -103,7 +107,7 @@ string toVerilog(vector<string> data, string filename) {
 
 	ofile += setDeclarations(declarations) + "\n";
     //ofile += getParam(declarations)+"\n";
-    ofile += operations(data, i) + "\n";
+    //ofile += operations(data, i) + "\n";
     
     return ofile;
 }
