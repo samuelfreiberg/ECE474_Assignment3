@@ -271,3 +271,15 @@ string removeSpaces(string s) {
 	}
 	return s;
 }
+//returns parameter part of output file
+string getParam(vector<unit> inputs) {
+	string parameters = "";
+	map <string, string> param;
+	for (int i = 0; i < inputs.size(); i++) {
+		if (param.find(inputs[i].parameter) == param.end()) {
+			param[inputs[i].parameter] = 'a';
+			parameters += "\tparameter " + inputs[i].parameter + " = " + to_string(inputs[i].getParam()) + ";\n";
+		}
+	}
+	return parameters;
+}
