@@ -41,7 +41,7 @@ int getDeclarations(vector <string> lines, vector <unit> &declarations);
 string setDeclarations(vector<unit>inputs);
 string getParam(vector<unit> inputs);
 vector<string> tokenize(string s, string tokenizer);
-
+string removeSpaces(string s);
 
 int main(int argc, char ** argv) {
 
@@ -272,6 +272,7 @@ string removeSpaces(string s) {
 	return s;
 }
 //returns parameter part of output file
+/*
 string getParam(vector<unit> inputs) {
 	string parameters = "";
 	map <string, string> param;
@@ -282,4 +283,4 @@ string getParam(vector<unit> inputs) {
 		}
 	}
 	return parameters;
-}
+}*/
