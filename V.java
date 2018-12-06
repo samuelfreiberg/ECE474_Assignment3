@@ -9,8 +9,11 @@ public class V {
 	ArrayList<V> successors;				// Array of successors
 	int delay;					// Cycle delay. Multipliers = 2, divider/modulo = 3, all others = 1
 	boolean isScheduled;		// True if scheduled, false otherwise
-	int timing;					// Timing of vertex
-	int initialTime;
+	int timing;					// Timing for ALAP
+	int initialTime;			// Initial time from CDFG
+	int final_time;				// Timing for list_r
+	
+	ArrayList<V> predecessors;
 	
 	// Constructor
 	public V(int id, String operation, String varName) {
@@ -18,15 +21,25 @@ public class V {
 		this.operation = operation;
 		this.varName = varName;
 		successors = new ArrayList<V>();
+		predecessors = new ArrayList<V>();
 		delay = calculateDelay(operation);
 		isScheduled = false;
 		timing = -1;
 		initialTime = 1;
+		final_time = -1;
 	}
 	
 	// Sets the delay
 	public void setDelay(int delay) {
 		this.delay = delay;
+	}
+	
+	public void setFinalTime(int time) {
+		this.final_time = time;
+	}
+	
+	public int getFinalTime() {
+		return this.final_time;
 	}
 	
 	public String getOperation() {
@@ -46,6 +59,16 @@ public class V {
 	// Returns successor array
 	public ArrayList<V> getSuccessors() {
 		return this.successors;
+	}
+	
+	// Adds a successor
+	public void addPredecessors(V vertex) {
+		this.predecessors.add(vertex);
+	}
+	
+	// Returns successor array
+	public ArrayList<V> getPredecessors() {
+		return this.predecessors;
 	}
 	
 	public void setScheduled(boolean set) {
