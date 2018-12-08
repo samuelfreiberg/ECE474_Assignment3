@@ -2,7 +2,7 @@
 #include <iostream>
 // ConsoleApplication3.cpp : This file contains the 'main' function. Program execution begins and ends there.
 
-
+#include <bitset>
 #include <fstream>
 #include <string>
 #include <map>
@@ -40,11 +40,14 @@ private:
 	bool isScheduled;        // True if scheduled, false otherwise
 	int timing;                    // Timing for ALAP
 	int initialTime;            // Initial time from CDFG
+	vector<string> statement;
+	string leftHalf;
+	string rightHalf;
 
 	// Constructor
 public:
 	int final_time;                // Timing for list_r
-	V(int id, string op, string varName) {
+	V(int id, string op, string varName, string s0, string s1) {
 		this->ID = id;
 		this->op = op;
 		this->varName = varName;
@@ -55,8 +58,20 @@ public:
 		timing = -1;
 		initialTime = 1;
 		final_time = -1;
+		this->leftHalf = s0;
+		this->rightHalf = s1;
+
+		
 	}
 	
+	string getStatementLeft() {
+		return this->leftHalf;
+	}
+
+	string getStatementRight() {
+		return this->rightHalf;
+	}
+
 	int pleaseWork() const {
 		return this->ID;
 	}
@@ -165,6 +180,14 @@ public:
 	}
 };
 
+struct less_than_key
+{
+	inline bool operator() (const V& struct1, const V& struct2)
+	{
+		return (struct1.final_time < struct2.final_time);
+	}
+};
+
 template<>
 struct hash<V>
 {
@@ -211,10 +234,19 @@ public:
 		// Adds new vertex for each statement
 		for (int i = x; i < lines.size(); i++) {
 			vector<string> line = tokenize(lines.at(i), " ");
+			vector<string> temp = tokenize(lines.at(i), " = ");
+
+			/*vector<string> temp;
+			temp.push_back(line.at(0));
+			temp.push_back(line.at(2));
+			temp.push_back(line.at(3));
+			temp.push_back(line.at(4));
+			*/
+			
 			//ArrayList<string> line = lines.at(i);
 			// CHANGE BACK TO LINE
 			string op = line.at(line.size() - 2);
-			vertices.push_back(*new V(v_id, op, line.at(0)));    // Adds new vertex
+			vertices.push_back(*new V(v_id, op, line.at(0), temp.at(0), temp.at(1)));    // Adds new vertex
 			v_id++;
 		}
 	}
@@ -295,6 +327,7 @@ public:
 				}
 				
 			}
+
 		}
 
 		// Adds dependencies from leaf to bottom Sink node
@@ -317,7 +350,7 @@ public:
 	}
 
 	// Performs ALAP scheduling
-	void alap(int latency) {
+	int alap(int latency) {
 
 		// Schedules the bottom sink node for upper latency bound + 1 and sets isScheduled to true
 		vertices.at(1).setTiming(latency + 1);
@@ -352,7 +385,7 @@ public:
 					if (valid == true) {
 						if (lowestTime - vertices.at(i).getDelay() < 1 && i != 0) {
 							cout << "Latency not possible!" << endl;
-							return;
+							return -1;
 						}
 						vertices.at(i).setTiming(lowestTime - vertices.at(i).getDelay());
 						vertices.at(i).setScheduled(true);
@@ -362,6 +395,7 @@ public:
 		}
 		// Top sink node is always time 0
 		vertices.at(0).setTiming(0);
+		return 1;
 	}
 
 	/* Runs list_r scheduling */
@@ -371,7 +405,6 @@ public:
 		resources[0] = 1;    // Resources requirement for ALU
 		resources[1] = 1;    // Resources requirement for Multiplier
 		resources[2] = 1;    // Resources requirement for Divider/Modulo
-
 		// Unschedules all vertices besides top sink node
 		for (int x = 1; x < vertices.size(); x++) {
 			vertices.at(x).setScheduled(false);
@@ -398,13 +431,13 @@ public:
 			int div_modulo_count = 0;
 			int alu_count = 0;
 
-			//vector<V>::iterator it;// = unscheduled.iterator();
-			for (unordered_set<V>::iterator it = unscheduled.begin(); it != unscheduled.end(); ++it) {
+			unordered_set<V>::iterator it = unscheduled.begin();
+			while (it != unscheduled.end()) {
 				V curr = *it;
 				// If slack = 0, we must schedule now
-				if (curr.getTiming() - time_step == 0 && allPredecessorsScheduled(curr)) {
-					curr.setFinalTime(time_step);
-					curr.setScheduled(true);
+				if(vertices.at(getIndex(curr.getName())).getTiming() - time_step == 0 && allPredecessorsScheduled(vertices.at(getIndex(curr.getName())))) {
+					vertices.at(getIndex(curr.getName())).setFinalTime(time_step);
+					vertices.at(getIndex(curr.getName())).setScheduled(true);
 
 					unscheduled.erase(findV(curr.getName()));
 
@@ -428,26 +461,27 @@ public:
 						}
 					}
 				}
+				it++;
 			}
-			printScheduled();
+			//printScheduled();
 
 			/* Schedule operations requiring no additional resources */
 			while (mult_count < resources[1]) {
-				vector<V>::iterator it1;
 
 				bool found = false;    // Variable to determine if any var is found
-
-				for (unordered_set<V>::iterator it = unscheduled.begin(); it != unscheduled.end(); ++it) {
+				unordered_set<V>::iterator it1 = unscheduled.begin();
+				while(it1 != unscheduled.end()) {
 					V curr1 = *it1;
 
-					if (curr1.getDelay() == 2) {
-						curr1.setFinalTime(time_step);
-						curr1.setScheduled(true);
+					if(vertices.at(getIndex(curr1.getName())).getDelay() == 2) {
+						vertices.at(getIndex(curr1.getName())).setFinalTime(time_step);
+						vertices.at(getIndex(curr1.getName())).setScheduled(true);
 						unscheduled.erase(curr1);
 						mult_count++;
 						found = true;
 						break;
 					}
+					it1++;
 				}
 				if (!found) {
 					break;
@@ -456,18 +490,19 @@ public:
 
 			while (div_modulo_count < resources[2]) {
 				bool found = false;
-				for (unordered_set<V>::iterator it2 = unscheduled.begin(); it2 != unscheduled.end(); ++it2) {
+				unordered_set<V>::iterator it2 = unscheduled.begin();
+				while(it2 != unscheduled.end()) {
 					V curr2 = *it2;
 
-					if (curr2.getDelay() == 3) {
-						curr2.setFinalTime(time_step);
-						curr2.setScheduled(true);
-						// it2.remove();
+					if (vertices.at(getIndex(curr2.getName())).getDelay() == 3) {
+						vertices.at(getIndex(curr2.getName())).setFinalTime(time_step);
+						vertices.at(getIndex(curr2.getName())).setScheduled(true);
 						unscheduled.erase(curr2);
 						div_modulo_count++;
 						found = true;
 						break;
 					}
+					it2++;
 				}
 				if (!found) {
 					break;
@@ -477,25 +512,24 @@ public:
 			while (alu_count < resources[0]) {
 				vector<V>::iterator it1;
 				bool found = false;
-				for (unordered_set<V>::iterator it3 = unscheduled.begin(); it3 != unscheduled.end(); ++it3) {
+				unordered_set<V>::iterator it3 = unscheduled.begin();
+				while(it3 != unscheduled.end()) {
 					V curr3 = *it3;
 
-					if (curr3.getDelay() == 1) {
-						curr3.setFinalTime(time_step);
-						curr3.setScheduled(true);
-						//    it3.remove();
+					if (vertices.at(getIndex(curr3.getName())).getDelay() == 1) {
+						vertices.at(getIndex(curr3.getName())).setFinalTime(time_step);
+						vertices.at(getIndex(curr3.getName())).setScheduled(true);
 						unscheduled.erase(curr3);
 						alu_count++;
 						found = true;
 						break;
 					}
+					it3++;
 				}
 				if (!found) {
 					break;
 				}
 			}
-
-			//printScheduled();
 			time_step++;
 		}
 	}
@@ -573,7 +607,7 @@ public:
 
 	/* Returns vertices */
 	vector<V> getVertices() {
-		return this->vertices;
+		return vertices;
 	}
 
 	struct less_than_key
@@ -719,6 +753,7 @@ string toVerilog(vector<string> data, string filename, int latency) {
 
 	ofile += setDeclarations(declarations) + "\n";
 	ofile += getStateMachine(data, i, latency);
+	cout << ofile << endl;
 	//ofile += getParam(declarations)+"\n";
 	//ofile += operations(data, i) + "\n";
 
@@ -731,40 +766,71 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 	string IO = "parameter Wait = 0, ";
 	vector <V> nodes;
 	list_r scheduler;
-	scheduler.addSinkNodes(*new V(0, "s", "topSink"), *new V(-1, "s", "bottomSink"));
-
+	scheduler.addSinkNodes(*new V(0, "s", "topSink", "",""), *new V(-1, "s", "bottomSink", "",""));
 
 	// Creates all the vertices
 	scheduler.addVertices(lines, i);
 
-	//for (int i = 0; i < scheduler.getVertices().size(); i++) {
-	//	cout << "vertices: " << scheduler.getVertices().at(i).getName() << ", ";
-	//}
-
 	// Adds all dependencies
 	scheduler.addDependencies(lines, i);
-	scheduler.printDependencies();
+
 	// Performs alap scheduling
-	scheduler.alap(latency);
-	scheduler.print_alap();
-	//cout << "what";
+	if (scheduler.alap(latency) == -1) {
+		return "Latency Not Possible";
+	}
+	//scheduler.print_alap();
+
 	// Performs List R scheduling
-	//scheduler.listR_Scheduling();
+	scheduler.listR_Scheduling();
 
-	//nodes = scheduler.getVertices();
-	//int last_time = nodes.at(nodes.size() - 2).getFinalTime();
+	nodes = scheduler.getVertices();
+	std::sort(nodes.begin(), nodes.end(), less_than_key());
+
+	int last_time = nodes.at(nodes.size() - 1).getFinalTime();
 	/* Writes all the states to the output string */
-	//for (int i = 1; i <= last_time; i++) {
-	//	IO += "time_" + i;
-	//	IO += " = " + i;
-	//	IO += ", ";
-	//}
+	for (int i = 1; i <= last_time; i++) {
+		IO += "time_" + to_string(i);
+		IO += " = " + to_string(i);
+		IO += ", ";
+	}
 
-	//IO += "Final = " + (last_time + 1);
-	//IO += ";\n";
-	//IO += "reg [1:0] State, StateNext;";
-	//return IO;
-	return "";
+	int const state = log2(last_time+2)+1; 
+
+	IO += "Final = " + to_string((last_time + 1));
+	IO += ";\n";
+	IO += "reg [1:0] State, StateNext;\n";
+
+
+	IO += "always @(posedge clk) begin\n";
+	IO += "if (Rst == 1) begin\n";
+	//IO += "state <= Wait"
+	IO += "if (Start == 1) begin\nState <= time_1;\nend\n";
+	IO += "if (Rst == 1) begin\nState <= time_1;\nend\n";
+	IO += "else begin\nState <= StateNext;\n\n";
+
+	IO += "case(State)\n";
+
+	for (int i = 1; i <= last_time; i++) {
+
+		std::string binary = std::bitset<6>(i).to_string();
+		IO += binary + ": begin\n";
+
+		for (int j = 0; j < nodes.size(); j++) {
+			if (nodes.at(j).getFinalTime() == i) {
+			//	vector<string> s(nodes.at(j).getStatement());
+				//cout <<"size:" <<s.size()<<"\n";
+				IO += nodes.at(j).getStatementLeft() + " <= " + nodes.at(j).getStatementRight() +"\n";
+				/*+nodes.at(j).getStatement().at(1) + "\n";*/
+			}
+		}
+		IO += "end\n";
+	}
+	IO += "endcase\nend\nend";
+		// iterate through all clock cycles
+			//declare the states
+				// implement the logic for each time/state
+	cout << IO;
+	return IO;
 }
 
 
@@ -819,6 +885,7 @@ int getDeclarations(vector <string> lines, vector <unit> &declarations) {
 	return 0;
 }
 
+
 // Types input, output declarations in outputfile
 string setDeclarations(vector<unit>inputs) {
 	string IO = "\tinput Clk, Rst, Start;\n";
@@ -836,6 +903,7 @@ string setDeclarations(vector<unit>inputs) {
 		if (inputs[i].type == "input") {
 			if (inputs[i].dataType == inputs[i - 1].dataType  && inputs[i].type == inputs[i - 1].type) {
 				IO += ", " + inputs[i].varName;
+		
 			}
 			else {
 				if (inputs[i].getParam() == 1) {
@@ -849,6 +917,7 @@ string setDeclarations(vector<unit>inputs) {
 		else {
 			if (inputs[i].dataType == inputs[i - 1].dataType  && inputs[i].type == inputs[i - 1].type) {
 				IO += ", " + inputs[i].varName;
+		
 			}
 			else {
 				if (inputs[i].getParam() == 1) {
