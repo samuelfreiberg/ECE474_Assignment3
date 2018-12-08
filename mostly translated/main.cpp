@@ -1,12 +1,19 @@
+// ConsoleApplication3.cpp : This file contains the 'main' function. Program execution begins and ends there.
+//
+
+#include "pch.h"
+#include "V.cpp"
+#include "list_r.cpp"
 #include <iostream>
+
+// ConsoleApplication2.cpp : This file contains the 'main' function. Program execution begins and ends there.
+
 #include <fstream>
 #include <string>
 #include <map>
 #include <vector>
 #include <cstring>
 #include <stdlib.h>
-#include "V.cpp"
-#include "List_r.cpp"
 using namespace std;
 
 class unit {
@@ -38,36 +45,42 @@ public:
 };
 
 map <string, string> sizes;		// <Variable Name, Data Type>
-string toVerilog(vector<string> data, string filename);
+string toVerilog(vector<string> data, string filename, int latency);
 int getDeclarations(vector <string> lines, vector <unit> &declarations);
 string setDeclarations(vector<unit>inputs);
 string getParam(vector<unit> inputs);
 vector<string> tokenize(string s, string tokenizer);
 string removeSpaces(string s);
+void outFileFun(string outfilename, string output);
+string getStateMachine(vector<unit> lines, int i);
+//void addVertices(vector<unit> lines, int i);
+//void addDependencies(vector<unit> lines, int i);
+//void alap(int latency);
 
 int main(int argc, char ** argv) {
 
 	// Ensures correct command-line usage
-	if (argc != 4) {
+	if (argc != 5) {
 		cout << "USAGE: hlsyn cFile latency verilogFile";
 		return -1;
 	}
 
-	string inputFile = argv[1];			// Input C File to be read from
-	string latency = argv[2];					// Latency contraint
-	string outputFile = argv[3];			// Output file
+	string inputFile = argv[2];				// Input C File to be read from
+	int latency = atoi(argv[3]);			// Latency contraint
+	cout << latency << "\n";
+	string outputFile = argv[4];			// Output file
 
 	vector <string> lines;		// Array to hold each line from input file
 
 	ifstream infile;
-	infile.open(inputFile);
+	infile.open("test1.txt");
 	string temp = "";
 
 	// Reads input file
 	if (infile.is_open()) {
 		while (getline(infile, temp)) {
 			if (temp.length() > 1 && temp.substr(0, 2) != "//") {		// Ensures no empty lines or comments
-																		// Removes all spaces from line
+				// Removes all spaces from line
 				temp = removeSpaces(temp);
 				lines.push_back(temp);
 			}
@@ -75,9 +88,9 @@ int main(int argc, char ** argv) {
 
 		infile.close();
 
-		string output = toVerilog(lines, outputFile);
+		string output = toVerilog(lines, outputFile, latency);
 
-		//outFileFun(outputFile, output);
+		outFileFun(outputFile, output);
 	}
 	else {
 		cout << "File missing/Incorrect path\n";
@@ -85,9 +98,9 @@ int main(int argc, char ** argv) {
 }
 
 // Converts to HLSM in verilog
-string toVerilog(vector<string> data, string filename) {
-
-	string ofile = "`timescale 1ns / 1ps\n\nmodule " + filename + "(Clk, Rst, Start, Done";
+string toVerilog(vector<string> data, string filename, int latency) {
+	cout << "Hi\n";
+	string ofile = "`timescale 1ns / 1ps\n\nmodule HLSM (Clk, Rst, Start, Done";
 	string wires = "";
 
 	vector <unit> declarations;
@@ -99,7 +112,7 @@ string toVerilog(vector<string> data, string filename) {
 	// Initializes the parameters for verilog function
 	for (int x = 0; x < declarations.size(); x++) {
 		if (declarations[x].type != "variable") {
-			ofile = ofile + "," + declarations[x].varName;
+			ofile = ofile + ", " + declarations[x].varName;
 		}
 	}
 
@@ -108,11 +121,48 @@ string toVerilog(vector<string> data, string filename) {
 	// Parameters are done. Move to local variables
 
 	ofile += setDeclarations(declarations) + "\n";
+	ofile += getStateMachine(data, i, latency);
 	//ofile += getParam(declarations)+"\n";
 	//ofile += operations(data, i) + "\n";
 
 	return ofile;
 }
+
+/* Calls list_r, creates valid HLSM */
+string getStateMachine(vector<string> lines, int i, int latency) {
+
+	string IO = "parameter Wait = 0, ";
+	vector <V> nodes;
+	list_r scheduler;
+
+	// Creates all the vertices
+	scheduler.addVertices(lines, i);
+
+	// Adds all dependencies
+	scheduler.addDependencies(lines, i);
+
+	// Performs alap scheduling
+	scheduler.alap(latency);
+
+	// Performs List R scheduling
+	scheduler.listR_Scheduling();
+
+	nodes = scheduler.getVertices();
+	int last_time = nodes.at(nodes.size() - 2).getFinalTime();
+	
+	/* Writes all the states to the output string */
+	for (int i = 1; i <= last_time; i++) {
+		IO += "time_" + i;
+		IO += " = " + i;
+		IO += ", ";
+	}
+
+	IO += "Final = " + (last_time + 1);
+	IO += ";\n";
+	IO += "reg [1:0] State, StateNext;";
+}
+
+
 
 /* INPUTS: 		vector <string> lines = array of input lines
 *
@@ -276,13 +326,36 @@ string removeSpaces(string s) {
 //returns parameter part of output file
 /*
 string getParam(vector<unit> inputs) {
-string parameters = "";
-map <string, string> param;
-for (int i = 0; i < inputs.size(); i++) {
-if (param.find(inputs[i].parameter) == param.end()) {
-param[inputs[i].parameter] = 'a';
-parameters += "\tparameter " + inputs[i].parameter + " = " + to_string(inputs[i].getParam()) + ";\n";
-}
-}
-return parameters;
+	string parameters = "";
+	map <string, string> param;
+	for (int i = 0; i < inputs.size(); i++) {
+		if (param.find(inputs[i].parameter) == param.end()) {
+			param[inputs[i].parameter] = 'a';
+			parameters += "\tparameter " + inputs[i].parameter + " = " + to_string(inputs[i].getParam()) + ";\n";
+		}
+	}
+	return parameters;
 }*/
+//returns parameter part of output file
+/*
+string getParam(vector<unit> inputs) {
+	string parameters = "";
+	map <string, string> param;
+	for (int i = 0; i < inputs.size(); i++) {
+		if (param.find(inputs[i].parameter) == param.end()) {
+			param[inputs[i].parameter] = 'a';
+			parameters += "\tparameter " + inputs[i].parameter + " = " + to_string(inputs[i].getParam()) + ";\n";
+		}
+	}
+	return parameters;
+}*/
+// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
+// Debug program: F5 or Debug > Start Debugging menu
+
+// Tips for Getting Started: 
+//   1. Use the Solution Explorer window to add/manage files
+//   2. Use the Team Explorer window to connect to source control
+//   3. Use the Output window to see build output and other messages
+//   4. Use the Error List window to view errors
+//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
+//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
