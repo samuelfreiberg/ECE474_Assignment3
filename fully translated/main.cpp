@@ -184,12 +184,11 @@ public:
 	list_r() {
 		vector<V> vertices;
 
-		vertices.push_back(*new V(0, "", ""));    // Top Sink node
-		vertices.push_back(*new V(-1, "", ""));    // Bottom Sink node
+		//vertices.push_back(*new V(0, "", ""));    // Top Sink node
+		//vertices.push_back(*new V(-1, "", ""));    // Bottom Sink node
 
 		v_id = 1;
 	}
-
 
 	vector<string> tokenize(string s, string tokenizer) {
 		int pos;
@@ -236,31 +235,37 @@ public:
 				string var1 = line[1];
 				string var2 = line[line.size() - 1];
 
-				std::unordered_set<std::string>::iterator check1 = set1.find(var1);
-				std::unordered_set<std::string>::iterator check2 = set1.find(var2);
+				//cout << "Set = " 
+
+				//std::unordered_set<std::string>::iterator check1 = set1.find(var1);
+				//std::unordered_set<std::string>::iterator check2 = set1.find(var2);
+				//std::unordered_set<std::V>::const_iterator got = set1.find(var1);
+
+				const bool is_in1 = set1.find(var1) != set1.end();
+				const bool is_in2 = set1.find(var2) != set1.end();
 
 
 				// If no dependency, add edge from sink node
-				if (check1 == set1.end() && check2 == set1.end()) {
+				if(is_in1 == false && is_in2 == false) {
 					vertices.at(0).addSuccessor(findV(var0));            // Adds successor to sink node
 					findV(var0).addPredecessors(vertices.at(0));        // Adds predecessor
 					set1.insert(var0);
 				}
 				/* Initial Time is time from CDFG. Needed to compute slack for List_R scheduling */
 				else {
-					if (check1 != set1.end() && check2 != set1.end()) {
+					if (is_in1 == true && is_in2 == true) {
 						findV(var1).addSuccessor(findV(var0));        // Adds successor
 						findV(var2).addSuccessor(findV(var0));        // Adds successor
 						findV(var0).addPredecessors(findV(var1));    // Adds predecessor
 						findV(var0).addPredecessors(findV(var2));    // Adds predecessor
 						findV(var0).setInitialTime(max(findV(var1).getInitialTime() + findV(var1).getDelay(), findV(var2).getInitialTime() + findV(var2).getDelay()));
 					}
-					else if (check1 != set1.end()) {
+					else if (is_in1 == true) {
 						findV(var1).addSuccessor(findV(var0));        // Adds successor
 						findV(var0).addPredecessors(findV(var1));    // Adds predecessor
 						findV(var0).setInitialTime(findV(var1).getInitialTime() + findV(var1).getDelay());
 					}
-					else if (check2 != set1.end()) {
+					else if (is_in2 == true) {
 						findV(var2).addSuccessor(findV(var0));        // Adds successor
 						findV(var0).addPredecessors(findV(var2));    // Adds predecessor
 						findV(var0).setInitialTime(findV(var2).getInitialTime() + findV(var2).getDelay());
@@ -268,6 +273,7 @@ public:
 					set1.insert(var0);
 					vertices.at(0).addSuccessor(findV(var0));            // Adds successor to sink node
 				}
+				
 			}
 		}
 
@@ -277,6 +283,14 @@ public:
 				vertices.at(j).addSuccessor(vertices.at(1));
 			}
 			vertices.at(1).addPredecessors(vertices.at(j));    // Adds all vertices as predecessor to bottom sink node
+		}
+
+		for (int n = 0; n < vertices.size(); n++) {
+			cout << vertices.at(n).getName() << " has these successors: ";
+			for (int h = 0; h < vertices.at(n).getSuccessors().size(); h++) {
+				cout << vertices.at(n).getSuccessors().at(h).getName() << ", ";
+			}
+			cout << "\n";
 		}
 	}
 
@@ -298,7 +312,7 @@ public:
 
 				if (currentV.getIsScheduled() == false) {            // If vertex is not scheduled, check all it's successors to determine if their scheduled
 					vector<V> successors = currentV.getSuccessors();
-					for (int j = 0; j < successors.size(); j++) {
+					for (int j = 0; j <  successors.size(); j++) {
 						if (successors.at(j).getIsScheduled() == false) {        // If all successors are not scheduled, break
 							valid = false;
 							break;
@@ -481,10 +495,16 @@ public:
 	bool allVerticesScheduled() {
 		for (int i = 0; i < vertices.size(); i++) {
 			if (vertices.at(i).getIsScheduled() == false) {
+				//cout << i << "\n";
 				return false;
 			}
 		}
 		return true;
+	}
+
+	void addSinkNodes(V a, V b) {
+		this->vertices.push_back(a);
+		this->vertices.push_back(b);
 	}
 
 	// True if all predecessors scheduled, false otherwise
@@ -685,32 +705,38 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 	string IO = "parameter Wait = 0, ";
 	vector <V> nodes;
 	list_r scheduler;
+	scheduler.addSinkNodes(*new V(0, "s", "topSink"), *new V(-1, "s", "bottomSink"));
+
 
 	// Creates all the vertices
 	scheduler.addVertices(lines, i);
 
+	//for (int i = 0; i < scheduler.getVertices().size(); i++) {
+	//	cout << "vertices: " << scheduler.getVertices().at(i).getName() << ", ";
+	//}
+
 	// Adds all dependencies
 	scheduler.addDependencies(lines, i);
-
 	// Performs alap scheduling
 	scheduler.alap(latency);
-
+	cout << "what";
 	// Performs List R scheduling
-	scheduler.listR_Scheduling();
+	//scheduler.listR_Scheduling();
 
-	nodes = scheduler.getVertices();
-	int last_time = nodes.at(nodes.size() - 2).getFinalTime();
-	
+	//nodes = scheduler.getVertices();
+	//int last_time = nodes.at(nodes.size() - 2).getFinalTime();
 	/* Writes all the states to the output string */
-	for (int i = 1; i <= last_time; i++) {
-		IO += "time_" + i;
-		IO += " = " + i;
-		IO += ", ";
-	}
+	//for (int i = 1; i <= last_time; i++) {
+	//	IO += "time_" + i;
+	//	IO += " = " + i;
+	//	IO += ", ";
+	//}
 
-	IO += "Final = " + (last_time + 1);
-	IO += ";\n";
-	IO += "reg [1:0] State, StateNext;";
+	//IO += "Final = " + (last_time + 1);
+	//IO += ";\n";
+	//IO += "reg [1:0] State, StateNext;";
+	//return IO;
+	return "";
 }
 
 
