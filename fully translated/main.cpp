@@ -228,14 +228,15 @@ public:
 			vector<string> line = tokenize(lines.at(i), " ");
 			//ArrayList<string> line = lines.at(i);
 
+
 			// HAVE NOT ACCOUNTED FOR IF STATEMENTS YET
 			// Determine if case: o = sel ? i1 : i0... I have not accounted for this case yet
 			if (line.at(line.size() - 2) != ":") {
 				string var0 = line[0];
-				string var1 = line[1];
-				string var2 = line[line.size() - 1];
+				string var1 = line[2];
+				string var2 = line[line.size() - 1]; 
 
-				//cout << "Set = " 
+				//cout << var1 << " + " << var2 << endl;
 
 				//std::unordered_set<std::string>::iterator check1 = set1.find(var1);
 				//std::unordered_set<std::string>::iterator check2 = set1.find(var2);
@@ -247,31 +248,50 @@ public:
 
 				// If no dependency, add edge from sink node
 				if(is_in1 == false && is_in2 == false) {
-					vertices.at(0).addSuccessor(findV(var0));            // Adds successor to sink node
-					findV(var0).addPredecessors(vertices.at(0));        // Adds predecessor
+					//vertices.at(0).addSuccessor(findV(var0));            // Adds successor to sink node
+					vertices.at(0).addSuccessor(vertices.at(getIndex(var0)));
+					//findV(var0).addPredecessors(vertices.at(0));        // Adds predecessor
+					vertices.at(getIndex(var0)).addPredecessors(vertices.at(0));
+					//cout << "Neither" << endl;
 					set1.insert(var0);
 				}
 				/* Initial Time is time from CDFG. Needed to compute slack for List_R scheduling */
 				else {
 					if (is_in1 == true && is_in2 == true) {
-						findV(var1).addSuccessor(findV(var0));        // Adds successor
-						findV(var2).addSuccessor(findV(var0));        // Adds successor
-						findV(var0).addPredecessors(findV(var1));    // Adds predecessor
-						findV(var0).addPredecessors(findV(var2));    // Adds predecessor
-						findV(var0).setInitialTime(max(findV(var1).getInitialTime() + findV(var1).getDelay(), findV(var2).getInitialTime() + findV(var2).getDelay()));
+						//cout << "Both" << endl;
+
+						vertices.at(getIndex(var1)).addSuccessor(vertices.at(getIndex(var0)));
+						vertices.at(getIndex(var2)).addSuccessor(vertices.at(getIndex(var0)));
+						vertices.at(getIndex(var0)).addPredecessors(vertices.at(getIndex(var1)));
+						vertices.at(getIndex(var0)).addPredecessors(vertices.at(getIndex(var2)));
+						vertices.at(getIndex(var0)).setInitialTime(max(vertices.at(getIndex(var1)).getInitialTime() + vertices.at(getIndex(var1)).getDelay(), vertices.at(getIndex(var2)).getInitialTime() + vertices.at(getIndex(var2)).getDelay()));
+
+						//findV(var1).addSuccessor(findV(var0));        // Adds successor
+						//findV(var2).addSuccessor(findV(var0));        // Adds successor
+						//findV(var0).addPredecessors(findV(var1));    // Adds predecessor
+						//findV(var0).addPredecessors(findV(var2));    // Adds predecessor
+						//findV(var0).setInitialTime(max(findV(var1).getInitialTime() + findV(var1).getDelay(), findV(var2).getInitialTime() + findV(var2).getDelay()));
 					}
 					else if (is_in1 == true) {
-						findV(var1).addSuccessor(findV(var0));        // Adds successor
-						findV(var0).addPredecessors(findV(var1));    // Adds predecessor
-						findV(var0).setInitialTime(findV(var1).getInitialTime() + findV(var1).getDelay());
+						//cout << var1 << " is dependent" << endl;
+
+						vertices.at(getIndex(var1)).addSuccessor(vertices.at(getIndex(var0)));
+						vertices.at(getIndex(var0)).addPredecessors(vertices.at(getIndex(var1)));
+						vertices.at(getIndex(var0)).setInitialTime(vertices.at(getIndex(var1)).getInitialTime() + vertices.at(getIndex(var1)).getDelay());
 					}
 					else if (is_in2 == true) {
-						findV(var2).addSuccessor(findV(var0));        // Adds successor
-						findV(var0).addPredecessors(findV(var2));    // Adds predecessor
-						findV(var0).setInitialTime(findV(var2).getInitialTime() + findV(var2).getDelay());
+						//cout << var2 << " is dependent" << endl;
+						//findV(var2).addSuccessor(findV(var0));        // Adds successor
+						//findV(var0).addPredecessors(findV(var2));    // Adds predecessor
+						//findV(var0).setInitialTime(findV(var2).getInitialTime() + findV(var2).getDelay());
+
+						vertices.at(getIndex(var2)).addSuccessor(vertices.at(getIndex(var0)));
+						vertices.at(getIndex(var0)).addPredecessors(vertices.at(getIndex(var2)));
+						vertices.at(getIndex(var0)).setInitialTime(vertices.at(getIndex(var2)).getInitialTime() + vertices.at(getIndex(var2)).getDelay());
 					}
+					//cout << "Inserting " << var0 << endl;
 					set1.insert(var0);
-					vertices.at(0).addSuccessor(findV(var0));            // Adds successor to sink node
+					vertices.at(0).addSuccessor(vertices.at(getIndex(var0)));            // Adds successor to sink node
 				}
 				
 			}
@@ -284,14 +304,16 @@ public:
 			}
 			vertices.at(1).addPredecessors(vertices.at(j));    // Adds all vertices as predecessor to bottom sink node
 		}
+		
+	}
 
-		for (int n = 0; n < vertices.size(); n++) {
-			cout << vertices.at(n).getName() << " has these successors: ";
-			for (int h = 0; h < vertices.at(n).getSuccessors().size(); h++) {
-				cout << vertices.at(n).getSuccessors().at(h).getName() << ", ";
+	int getIndex(string s) {
+		for (int i = 0; i < vertices.size(); i++) {
+			if (vertices.at(i).getName().compare(s) == 0) {
+				return i;
 			}
-			cout << "\n";
 		}
+		return -1;
 	}
 
 	// Performs ALAP scheduling
@@ -313,13 +335,17 @@ public:
 				if (currentV.getIsScheduled() == false) {            // If vertex is not scheduled, check all it's successors to determine if their scheduled
 					vector<V> successors = currentV.getSuccessors();
 					for (int j = 0; j <  successors.size(); j++) {
-						if (successors.at(j).getIsScheduled() == false) {        // If all successors are not scheduled, break
+						if (currentV.getName().compare("i") == 0) {
+							cout << successors.at(j).getName() << " is " << successors.at(j).getIsScheduled() << endl;
+						}
+						//if (successors.at(j).getIsScheduled() == false) {        // If all successors are not scheduled, break
+						if (vertices.at(getIndex(successors.at(j).getName())).getIsScheduled() == false) {
 							valid = false;
-							break;
 						}
 						else {
-							if (successors.at(j).getTiming() < lowestTime) {
-								lowestTime = successors.at(j).getTiming();
+							if(vertices.at(getIndex(successors.at(j).getName())).getTiming() < lowestTime) {
+							//if (successors.at(j).getTiming() < lowestTime) {
+								lowestTime = vertices.at(getIndex(successors.at(j).getName())).getTiming();
 							}
 						}
 					}
@@ -356,7 +382,7 @@ public:
 		int time_step = 1;
 		std::unordered_set<V> unscheduled;
 
-		while (!allVerticesScheduled()) {
+		while (allVerticesScheduled() == false) {
 			//System.out.print("Unscheduled: " );
 			for (int i = 2; i < vertices.size(); i++) {
 				if (vertices.at(i).getInitialTime() == time_step && !vertices.at(i).getIsScheduled()) {
@@ -717,9 +743,11 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 
 	// Adds all dependencies
 	scheduler.addDependencies(lines, i);
+	scheduler.printDependencies();
 	// Performs alap scheduling
 	scheduler.alap(latency);
-	cout << "what";
+	scheduler.print_alap();
+	//cout << "what";
 	// Performs List R scheduling
 	//scheduler.listR_Scheduling();
 
