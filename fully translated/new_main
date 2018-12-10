@@ -1,4 +1,5 @@
 
+
 #include <iostream>
 // ConsoleApplication3.cpp : This file contains the 'main' function. Program execution begins and ends there.
 
@@ -1083,46 +1084,46 @@ string toBinary(int n)
 string getStateName(int i, int size) {
 	if (size < 2) {
 		std::string binary = std::bitset<1>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	else if (size < 4) {
 		std::string binary = std::bitset<2>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	else if (size < 8) {
 		std::string binary = std::bitset<3>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	else if (size < 16) {
 		std::string binary = std::bitset<4>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	else if (size < 32) {
 		std::string binary = std::bitset<5>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	else if (size < 64) {
 		std::string binary = std::bitset<6>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	else if (size < 128) {
 		std::string binary = std::bitset<7>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	else if (size < 256) {
 		std::string binary = std::bitset<8>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	else if (size < 512) {
 		std::string binary = std::bitset<9>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	else if (size < 1024) {
 		std::string binary = std::bitset<10>(i).to_string();
-		return binary;
+		return "s" + binary;
 	}
 	std::string binary = std::bitset<11>(i).to_string();
-	return binary;
+	return "s" + binary;
 }
 
 
@@ -1175,7 +1176,7 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 	IO += "\treg [1:0] State, StateNext;\n";
 
 
-	IO += "\n\talways @(posedge clk) begin\n";
+	IO += "\n\talways @(posedge Clk) begin\n";
 	IO += "\t\tif (Rst == 1) begin\n";
 
 	for (int i = 0; i < tempOutputs.size(); i++) {
@@ -1234,7 +1235,7 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 	IO += "\t\t\t\t\tDone <= 1;\n\t\t\t\t\tStateNext <= Wait;\n";
 	IO += "\t\t\t\tend\n";
 
-	IO += "\t\t\tendcase\n\t\tend\n\tend\nend";
+	IO += "\t\t\tendcase\n\t\tend\n\tend\nendmodule";
 
 	//cout << IO;
 	return IO;
@@ -1339,10 +1340,15 @@ string setDeclarations(vector<unit>inputs) {
 			}
 			else {
 				if (inputs[i].getParam() == 1) {
-					IO += ";\n\t" + inputs[i].type + " reg " + inputs[i].varName;
+					IO += ";\n\t" + inputs[i].type + " " + inputs[i].varName;
 				}
 				else {
-					IO += ";\n\t" + inputs[i].type + " reg " + "[" + to_string(inputs[i].getParam() - 1) + ":0] " + inputs[i].varName;
+					if (inputs[i].type == "variable") {
+						IO += ";\n\treg [" + to_string(inputs[i].getParam() - 1) + ":0] " + inputs[i].varName;
+					}
+					else {
+						IO += ";\n\t" + inputs[i].type + " reg " + "[" + to_string(inputs[i].getParam() - 1) + ":0] " + inputs[i].varName;
+					}
 				}
 			}
 		}
