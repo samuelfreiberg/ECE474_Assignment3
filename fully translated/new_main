@@ -1,4 +1,4 @@
-
+#include "pch.h"
 
 #include <iostream>
 // ConsoleApplication3.cpp : This file contains the 'main' function. Program execution begins and ends there.
@@ -319,14 +319,32 @@ public:
 		}
 
 		for (int i = 0; i < tempVariables.size(); i++) {
+			if (vertices.at(var1_index).getName().compare(tempVariables.at(i).varName) == 0) {
+				var1 = tempVariables.at(i);
+			}
+		}
+
+		for (int i = 0; i < tempVariables.size(); i++) {
 			if (vertices.at(var2_index).getName().compare(tempVariables.at(i).varName) == 0) {
 				var2 = tempVariables.at(i);
+			}
+		}
+
+		for (int i = 0; i < tempInputs.size(); i++) {
+			if (vertices.at(var2_index).getName().compare(tempInputs.at(i).varName) == 0) {
+				var2 = tempInputs.at(i);
 			}
 		}
 
 		for (int i = 0; i < tempVariables.size(); i++) {
 			if (vertices.at(var3_index).getName().compare(tempVariables.at(i).varName) == 0) {
 				var3 = tempVariables.at(i);
+			}
+		}
+
+		for (int i = 0; i < tempInputs.size(); i++) {
+			if (vertices.at(var3_index).getName().compare(tempInputs.at(i).varName) == 0) {
+				var3 = tempInputs.at(i);
 			}
 		}
 
@@ -361,6 +379,7 @@ public:
 
 				if (validVariables(var1) == false || validVariables(var2) == false) {
 					//cout << "Invalid variables being used! Exiting." << endl;
+					cout << var0 << " " << var1 << " " << var2 << endl;
 					return -1;
 				}
 
@@ -432,6 +451,7 @@ public:
 									  /* Error checking */
 				if (validLength(getIndex(var0), getIndex(var2), getIndex(var3)) == false) {
 					//cout << "Invalid variables being used! Exiting." << endl;
+					cout << "hello??" << endl;
 					return -1;
 				}
 
@@ -615,8 +635,25 @@ public:
 		}
 	}
 
+	/* Iterate through predecessors, keeping lowest time*/
+	int latestPredecessor(string varName) {
+		int lowestTime = 10000;
+
+		for (int i = 0; i < vertices.at(getIndex(varName)).getPredecessors().size(); i++) {
+			if (vertices.at(getIndex(varName)).getPredecessors().at(i).getFinalTime() + vertices.at(getIndex(varName)).getPredecessors().at(i).getDelay() < lowestTime) {
+				lowestTime = vertices.at(getIndex(varName)).getPredecessors().at(i).getFinalTime() + vertices.at(getIndex(varName)).getPredecessors().at(i).getDelay();
+			}
+		}
+		return lowestTime;
+	}
+
 	/* Runs list_r scheduling */
 	void listR_Scheduling() {
+
+		int res[3][100];
+		// res[0] = alu
+		// res[1] = mult
+		// res[2] = divider
 
 		int resources[3];// = new int[3];
 		resources[0] = 1;    // Resources requirement for ALU
@@ -626,6 +663,7 @@ public:
 		for (int x = 1; x < vertices.size(); x++) {
 			vertices.at(x).setScheduled(false);
 		}
+
 		vertices.at(0).setScheduled(true);        // Sets top sink node to scheduled
 		vertices.at(1).setScheduled(true);        // Sets top sink node to scheduled
 
@@ -650,6 +688,7 @@ public:
 				if (vertices.at(i).getIsScheduled() == true) {
 					if (vertices.at(i).getDelay() == 2) {
 						if (vertices.at(i).getFinalTime() + vertices.at(i).getDelay() - 1 >= time_step) {
+							res[1][time_step]++;
 							mult_count++;
 						}
 					}
@@ -661,17 +700,54 @@ public:
 				}
 			}
 
-			// Iterate through vertices
-				// For isScheduled = true
-					// check for resource type...
-					// If multiplier
-						// if final time + cycle delay - 1  >= current_time
-							// Increment mult_count
-
 
 			unordered_set<V>::iterator it = unscheduled.begin();
 			while (it != unscheduled.end()) {
+
+				// if time_step = latency
+					// schedule all remaining
+
 				V curr = *it;
+				int latency = vertices.at(1).getTiming() - 1;
+
+				if (time_step == latency) {
+					if (findV(curr.getName()).getDelay() == 2) {
+
+						vertices.at(getIndex(curr.getName())).setScheduled(true);
+						vertices.at(getIndex(curr.getName())).setFinalTime(latency-1);
+
+						//int start = latestPredecessor(curr.getName());
+						//int latest = latency - 1;
+
+						//int index = 0;
+						//int lowest = 10000;
+
+						//for (int x = start; x <= latest; x++) {
+						//	if (res[1][x] < lowest) {
+						//		lowest = res[1][x];
+						//		index = x;
+						//	}
+						//}
+
+						//res[1][index]++;
+						//vertices.at(getIndex(curr.getName())).setScheduled(true);
+						//vertices.at(getIndex(curr.getName())).setFinalTime(index);
+					}
+					else if (findV(curr.getName()).getDelay() == 3) {
+						vertices.at(getIndex(curr.getName())).setScheduled(true);
+						vertices.at(getIndex(curr.getName())).setFinalTime(latency - 2);
+					}
+					else {
+						vertices.at(getIndex(curr.getName())).setScheduled(true);
+						vertices.at(getIndex(curr.getName())).setFinalTime(latency);
+					}
+					// Iterating from start width to end width
+						//
+
+					// determine what componenent
+
+				}
+
 				// If slack = 0, we must schedule now
 				if (vertices.at(getIndex(curr.getName())).getTiming() - time_step == 0 && allPredecessorsScheduled(vertices.at(getIndex(curr.getName())))) {
 					vertices.at(getIndex(curr.getName())).setFinalTime(time_step);
@@ -682,17 +758,23 @@ public:
 					/* Updates resources */
 					if (findV(curr.getName()).getOperation() == "*") {
 						mult_count++;
+						res[1][time_step-1]++;
+						res[1][time_step]++;
 						if (mult_count > resources[1]) {
 							resources[1]++;
 						}
 					}
 					else if (findV(curr.getName()).getOperation() == "/" || findV(curr.getName()).getOperation() == "%") {
 						div_modulo_count++;
+						res[2][time_step - 1]++;
+						res[2][time_step]++;
+						res[2][time_step + 1]++;
 						if (div_modulo_count > resources[2]) {
 							resources[2]++;
 						}
 					}
 					else {
+						res[0][time_step - 1]++;
 						alu_count++;
 						if (alu_count > resources[0]) {
 							resources[0]++;
@@ -844,6 +926,16 @@ public:
 		}
 	}
 
+	int getLatestTime() {
+		int latest = 0;
+		for (int i = 2; i < vertices.size(); i++) {
+			if (vertices.at(i).getFinalTime() > latest) {
+				latest = vertices.at(i).getFinalTime();
+			}
+		}
+		return latest;
+	}
+
 	/* Returns vertices */
 	vector<V> getVertices() {
 		return vertices;
@@ -983,6 +1075,14 @@ string toVerilog(vector<string> data, string filename, int latency) {
 	return ofile;
 }
 
+string toBinary(int n)
+{
+	std::string r;
+	while (n != 0) { r = (n % 2 == 0 ? "0" : "1") + r; n /= 2; }
+	return r;
+}
+
+
 /* Calls list_r, creates valid HLSM */
 string getStateMachine(vector<string> lines, int i, int latency) {
 
@@ -997,6 +1097,7 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 	// Adds all dependencies
 	if (scheduler.addDependencies(lines, i) == -1) {
 		//cout << "Invalid variables!" << endl;
+		cout << "hello" << endl;
 		return "Invalid";
 	}
 
@@ -1006,7 +1107,7 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 	if (scheduler.alap(latency) == -1) {
 		return "Latency Not Possible";
 	}
-	//scheduler.print_alap();
+	scheduler.print_alap();
 
 	// Performs List R scheduling
 	scheduler.listR_Scheduling();
@@ -1045,6 +1146,15 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 	IO += "\t\t\t\tState <= Wait;\n";
 	IO += "\t\tend\n";
 
+	int latest = scheduler.getLatestTime();
+
+	int test = log2(latest);
+	//for (int m = 0; m < latest; m++) {
+	//	string x = toBinary(m);
+	//	cout << endl << toBinary(m) << " is length " << x.length() << endl;
+
+
+	//}
 
 
 	IO += "\t\tcase(State)\n";
