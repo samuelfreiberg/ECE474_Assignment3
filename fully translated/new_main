@@ -1199,42 +1199,42 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 
 	//}
 
+	IO += "\t\telse begin\n";
+	IO += "\t\t\tcase(State)\n";
 
-	IO += "\t\tcase(State)\n";
-
-	IO += "\t\t\tWait: begin\n";
-	IO += "\t\t\t\tif(Start == 1)\n";
-	IO += "\t\t\t\t\tStateNext <= " + getStateName(1, last_time) +";\n";
-	IO += "\t\t\t\telse\n";
-	IO += "\t\t\t\t\tStateNext <= Wait;\n";
-	IO += "\t\t\tend\n";
+	IO += "\t\t\t\tWait: begin\n";
+	IO += "\t\t\t\t\tif(Start == 1)\n";
+	IO += "\t\t\t\t\t\tStateNext <= " + getStateName(1, last_time) +";\n";
+	IO += "\t\t\t\t\telse\n";
+	IO += "\t\t\t\t\t\tStateNext <= Wait;\n";
+	IO += "\t\t\t\tend\n";
 
 	for (int i = 1; i <= last_time; i++) {
 
 		std::string binary = getStateName(i, last_time);
-		IO += "\t\t\t" + binary + ": begin\n";
+		IO += "\t\t\t\t" + binary + ": begin\n";
 
 		for (int j = 0; j < nodes.size(); j++) {
 			if (nodes.at(j).getFinalTime() == i) {
-				IO += "\t\t\t\t" + nodes.at(j).getStatementLeft() + " <= " + nodes.at(j).getStatementRight() + ";\n";
+				IO += "\t\t\t\t\t" + nodes.at(j).getStatementLeft() + " <= " + nodes.at(j).getStatementRight() + ";\n";
 			}
 		}
 
 		if (i != last_time) {
-			IO += "\t\t\t\tStateNext <= " + getStateName(i, last_time) + ";\n";
+			IO += "\t\t\t\t\tStateNext <= " + getStateName(i, last_time) + ";\n";
 		}
 		else {
-			IO += "\t\t\t\tStateNext <= Final;\n";
+			IO += "\t\t\t\t\tStateNext <= Final;\n";
 		}
 
-		IO += "\t\t\tend\n";
+		IO += "\t\t\t\tend\n";
 	}
 
-	IO += "\t\t\tFinal: begin\n";
-	IO += "\t\t\t\tDone <= 1;\n\t\t\t\tStateNext <= Wait;\n";
-	IO += "\t\t\tend\n";
+	IO += "\t\t\t\tFinal: begin\n";
+	IO += "\t\t\t\t\tDone <= 1;\n\t\t\t\t\tStateNext <= Wait;\n";
+	IO += "\t\t\t\tend\n";
 
-	IO += "\t\tendcase\n\tend\nend";
+	IO += "\t\t\tendcase\n\t\tend\n\tend\nend";
 
 	//cout << IO;
 	return IO;
