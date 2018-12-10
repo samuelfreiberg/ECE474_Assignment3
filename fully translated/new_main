@@ -1,4 +1,4 @@
-#include "pch.h"
+
 #include <iostream>
 // ConsoleApplication3.cpp : This file contains the 'main' function. Program execution begins and ends there.
 
@@ -93,9 +93,9 @@ public:
 		this->leftHalf = s0;
 		this->rightHalf = s1;
 
-		
+
 	}
-	
+
 	string getStatementLeft() {
 		return this->leftHalf;
 	}
@@ -194,11 +194,11 @@ public:
 		return this->initialTime;
 	}
 	/*
-	 * Sets the delay for specified operator
-	 * Multipliers = 2
-	 * Divider/modulo = 3
-	 * All others = 1
-	 */
+	* Sets the delay for specified operator
+	* Multipliers = 2
+	* Divider/modulo = 3
+	* All others = 1
+	*/
 	int calculateDelay(string op) {
 		if (op == "*") {
 			return 2;
@@ -220,15 +220,18 @@ struct less_than_key
 	}
 };
 
-template<>
-struct hash<V>
-{
-	size_t
-		operator()(const V & obj) const
+
+namespace std {
+	template<>
+	struct hash<V>
 	{
-		return hash<int>()(obj.pleaseWork());
-	}
-};
+		size_t
+			operator()(const V & obj) const
+		{
+			return hash<int>()(obj.pleaseWork());
+		}
+	};
+}
 
 class list_r {
 private:
@@ -274,7 +277,7 @@ public:
 			temp.push_back(line.at(3));
 			temp.push_back(line.at(4));
 			*/
-			
+
 			//ArrayList<string> line = lines.at(i);
 			// CHANGE BACK TO LINE
 			string op = line.at(line.size() - 2);
@@ -339,7 +342,7 @@ public:
 	// Searches for dependencies within the statements
 	int addDependencies(vector<string> lines, int x) {
 
-		std::unordered_set<std::string> set1; // = new HashSet<string>();        // Set to hold variables already worked on (dependencies)
+		unordered_set<string> set1; // = new HashSet<string>();        // Set to hold variables already worked on (dependencies)
 
 		for (int i = x; i < lines.size(); i++) {
 			vector<string> line = tokenize(lines.at(i), " ");
@@ -351,7 +354,7 @@ public:
 			if (line.at(line.size() - 2) != ":") {
 				string var0 = line[0];
 				string var1 = line[2];
-				string var2 = line[line.size() - 1]; 
+				string var2 = line[line.size() - 1];
 
 				// if var 1 or var 2 arent an input or an already existing vertex, not valid
 
@@ -371,7 +374,7 @@ public:
 
 
 				// If no dependency, add edge from sink node
-				if(is_in1 == false && is_in2 == false) {
+				if (is_in1 == false && is_in2 == false) {
 					//vertices.at(0).addSuccessor(findV(var0));            // Adds successor to sink node
 					vertices.at(0).addSuccessor(vertices.at(getIndex(var0)));
 					//findV(var0).addPredecessors(vertices.at(0));        // Adds predecessor
@@ -417,7 +420,7 @@ public:
 					set1.insert(var0);
 					vertices.at(0).addSuccessor(vertices.at(getIndex(var0)));            // Adds successor to sink node
 				}
-				
+
 			}
 			else {
 				string var0 = line[0]; // z = g ? d : e   ----> z
@@ -425,7 +428,7 @@ public:
 				string var2 = line[4];// d
 				string var3 = line[6];// e
 
-				/* Error checking */
+									  /* Error checking */
 				if (validLength(getIndex(var0), getIndex(var2), getIndex(var3)) == false) {
 					//cout << "Invalid variables being used! Exiting." << endl;
 					return -1;
@@ -574,7 +577,7 @@ public:
 
 				if (currentV.getIsScheduled() == false) {            // If vertex is not scheduled, check all it's successors to determine if their scheduled
 					vector<V> successors = currentV.getSuccessors();
-					for (int j = 0; j <  successors.size(); j++) {
+					for (int j = 0; j < successors.size(); j++) {
 						if (currentV.getName().compare("i") == 0) {
 							//cout << successors.at(j).getName() << " is " << successors.at(j).getIsScheduled() << endl;
 						}
@@ -583,8 +586,8 @@ public:
 							valid = false;
 						}
 						else {
-							if(vertices.at(getIndex(successors.at(j).getName())).getTiming() < lowestTime) {
-							//if (successors.at(j).getTiming() < lowestTime) {
+							if (vertices.at(getIndex(successors.at(j).getName())).getTiming() < lowestTime) {
+								//if (successors.at(j).getTiming() < lowestTime) {
 								lowestTime = vertices.at(getIndex(successors.at(j).getName())).getTiming();
 							}
 						}
@@ -612,7 +615,7 @@ public:
 		resources[0] = 1;    // Resources requirement for ALU
 		resources[1] = 1;    // Resources requirement for Multiplier
 		resources[2] = 1;    // Resources requirement for Divider/Modulo
-		// Unschedules all vertices besides top sink node
+							 // Unschedules all vertices besides top sink node
 		for (int x = 1; x < vertices.size(); x++) {
 			vertices.at(x).setScheduled(false);
 		}
@@ -642,7 +645,7 @@ public:
 			while (it != unscheduled.end()) {
 				V curr = *it;
 				// If slack = 0, we must schedule now
-				if(vertices.at(getIndex(curr.getName())).getTiming() - time_step == 0 && allPredecessorsScheduled(vertices.at(getIndex(curr.getName())))) {
+				if (vertices.at(getIndex(curr.getName())).getTiming() - time_step == 0 && allPredecessorsScheduled(vertices.at(getIndex(curr.getName())))) {
 					vertices.at(getIndex(curr.getName())).setFinalTime(time_step);
 					vertices.at(getIndex(curr.getName())).setScheduled(true);
 
@@ -677,10 +680,10 @@ public:
 
 				bool found = false;    // Variable to determine if any var is found
 				unordered_set<V>::iterator it1 = unscheduled.begin();
-				while(it1 != unscheduled.end()) {
+				while (it1 != unscheduled.end()) {
 					V curr1 = *it1;
 
-					if(vertices.at(getIndex(curr1.getName())).getDelay() == 2) {
+					if (vertices.at(getIndex(curr1.getName())).getDelay() == 2) {
 						vertices.at(getIndex(curr1.getName())).setFinalTime(time_step);
 						vertices.at(getIndex(curr1.getName())).setScheduled(true);
 						unscheduled.erase(curr1);
@@ -698,7 +701,7 @@ public:
 			while (div_modulo_count < resources[2]) {
 				bool found = false;
 				unordered_set<V>::iterator it2 = unscheduled.begin();
-				while(it2 != unscheduled.end()) {
+				while (it2 != unscheduled.end()) {
 					V curr2 = *it2;
 
 					if (vertices.at(getIndex(curr2.getName())).getDelay() == 3) {
@@ -720,7 +723,7 @@ public:
 				vector<V>::iterator it1;
 				bool found = false;
 				unordered_set<V>::iterator it3 = unscheduled.begin();
-				while(it3 != unscheduled.end()) {
+				while (it3 != unscheduled.end()) {
 					V curr3 = *it3;
 
 					if (vertices.at(getIndex(curr3.getName())).getDelay() == 1) {
@@ -877,7 +880,7 @@ int main(int argc, char ** argv) {
 
 	string inputFile = argv[2];				// Input C File to be read from
 	int latency = atoi(argv[3]);			// Latency contraint
-	//cout << latency << "\n";
+											//cout << latency << "\n";
 	string outputFile = argv[4];			// Output file
 
 	vector <string> lines;		// Array to hold each line from input file
@@ -895,7 +898,7 @@ int main(int argc, char ** argv) {
 	if (infile.is_open()) {
 		while (getline(infile, temp)) {
 			if (temp.length() > 1 && temp.substr(0, 2) != "//") {		// Ensures no empty lines or comments
-				// Removes all spaces from line
+																		// Removes all spaces from line
 				temp = removeSpaces(temp);
 				lines.push_back(temp);
 			}
@@ -958,7 +961,7 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 	string IO = "\n\tparameter Wait = 0, ";
 	vector <V> nodes;
 	list_r scheduler;
-	scheduler.addSinkNodes(*new V(0, "s", "topSink", "",""), *new V(-1, "s", "bottomSink", "",""));
+	scheduler.addSinkNodes(*new V(0, "s", "topSink", "", ""), *new V(-1, "s", "bottomSink", "", ""));
 
 	// Creates all the vertices
 	scheduler.addVertices(lines, i);
@@ -991,7 +994,7 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 		IO += ", ";
 	}
 
-	int const state = log2(last_time+2)+1; 
+	int const state = log2(last_time + 2) + 1;
 
 	IO += "Final = " + to_string((last_time + 1));
 	IO += ";\n";
@@ -1021,10 +1024,10 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 
 		for (int j = 0; j < nodes.size(); j++) {
 			if (nodes.at(j).getFinalTime() == i) {
-				IO += "\t\t\t\t" + nodes.at(j).getStatementLeft() + " <= " + nodes.at(j).getStatementRight() +"\n";
+				IO += "\t\t\t\t" + nodes.at(j).getStatementLeft() + " <= " + nodes.at(j).getStatementRight() + "\n";
 			}
 		}
-		
+
 		if (i != last_time) {
 			IO += "\t\t\t\tStateNext <= " + std::bitset<6>(i + 1).to_string() + ";\n";
 		}
@@ -1117,7 +1120,7 @@ string setDeclarations(vector<unit>inputs) {
 			tempInputs.push_back(inputs[i]);
 			if (inputs[i].dataType == inputs[i - 1].dataType  && inputs[i].type == inputs[i - 1].type) {
 				IO += ", " + inputs[i].varName;
-		
+
 			}
 			else {
 				if (inputs[i].getParam() == 1) {
@@ -1139,7 +1142,7 @@ string setDeclarations(vector<unit>inputs) {
 			}
 			if (inputs[i].dataType == inputs[i - 1].dataType  && inputs[i].type == inputs[i - 1].type) {
 				IO += ", " + inputs[i].varName;
-		
+
 			}
 			else {
 				if (inputs[i].getParam() == 1) {
