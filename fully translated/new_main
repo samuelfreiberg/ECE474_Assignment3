@@ -1,4 +1,5 @@
 
+
 #include <iostream>
 // ConsoleApplication3.cpp : This file contains the 'main' function. Program execution begins and ends there.
 
@@ -608,6 +609,12 @@ public:
 		return 1;
 	}
 
+	void printInitialTime() {
+		for (int i = 0; i < vertices.size(); i++) {
+			cout << vertices.at(i).getName() << " initial time is " << vertices.at(i).getInitialTime() << "\n";
+		}
+	}
+
 	/* Runs list_r scheduling */
 	void listR_Scheduling() {
 
@@ -625,21 +632,42 @@ public:
 		int time_step = 1;
 		std::unordered_set<V> unscheduled;
 
+		int add_mult_resources = 0;
+
 		while (allVerticesScheduled() == false) {
-			//System.out.print("Unscheduled: " );
+			
+			/* Holds current # of resources at this time step */
+			int mult_count = 0;
+			int div_modulo_count = 0;
+			int alu_count = 0;
+
 			for (int i = 2; i < vertices.size(); i++) {
 				if (vertices.at(i).getInitialTime() == time_step && !vertices.at(i).getIsScheduled()) {
 					unscheduled.insert(vertices.at(i));
 					//System.out.print(vertices.at(i).getName() + ", ");
 				}
+
+				if (vertices.at(i).getIsScheduled() == true) {
+					if (vertices.at(i).getDelay() == 2) {
+						if (vertices.at(i).getFinalTime() + vertices.at(i).getDelay() - 1 >= time_step) {
+							mult_count++;
+						}
+					}
+					else if (vertices.at(i).getDelay() == 3) {
+						if (vertices.at(i).getFinalTime() + vertices.at(i).getDelay() - 1 >= time_step) {
+							div_modulo_count++;
+						}
+					}
+				}
 			}
 
-			//System.out.println();
+			// Iterate through vertices
+				// For isScheduled = true
+					// check for resource type...
+					// If multiplier
+						// if final time + cycle delay - 1  >= current_time
+							// Increment mult_count
 
-			/* Holds current # of resources at this time step */
-			int mult_count = 0;
-			int div_modulo_count = 0;
-			int alu_count = 0;
 
 			unordered_set<V>::iterator it = unscheduled.begin();
 			while (it != unscheduled.end()) {
@@ -972,6 +1000,8 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 		return "Invalid";
 	}
 
+	//scheduler.printInitialTime();
+
 	// Performs alap scheduling
 	if (scheduler.alap(latency) == -1) {
 		return "Latency Not Possible";
@@ -980,7 +1010,7 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 
 	// Performs List R scheduling
 	scheduler.listR_Scheduling();
-	//scheduler.printFinalTime();
+	scheduler.printFinalTime();
 
 	nodes = scheduler.getVertices();
 	std::sort(nodes.begin(), nodes.end(), less_than_key());
@@ -1003,10 +1033,19 @@ string getStateMachine(vector<string> lines, int i, int latency) {
 
 	IO += "\n\talways @(posedge clk) begin\n";
 	IO += "\t\tif (Rst == 1) begin\n";
-	//IO += "state <= Wait"
-	IO += "\t\t\tif (Start == 1) begin\n\t\t\t\tState <= time_1;\n\t\t\tend\n";
-	IO += "\t\t\tif (Rst == 1) begin\n\t\t\t\tState <= time_1;\n\t\t\tend\n";
-	IO += "\t\t\telse begin\n\t\t\t\tState <= StateNext;\n\n";
+
+	for (int i = 0; i < tempOutputs.size(); i++) {
+		IO += "\t\t\t\t" + tempOutputs.at(i).varName + " <= 0;\n";
+	}
+
+	for (int i = 0; i < tempVariables.size(); i++) {
+		IO += "\t\t\t\t" + tempVariables.at(i).varName + " <= 0;\n";
+	}
+
+	IO += "\t\t\t\tState <= Wait;\n";
+	IO += "\t\tend\n";
+
+
 
 	IO += "\t\tcase(State)\n";
 
@@ -1222,4 +1261,3 @@ string removeSpaces(string s) {
 	}
 	return s;
 }
-
